@@ -2,6 +2,12 @@
 
 CareerMatch is a student/demo project that ranks active catalog internships against a saved candidate profile. It does **not** submit applications, contact employers, send email, or predict hiring outcomes.
 
+## Live Demo
+
+- **Frontend:** https://careermatch-frontend-inhq.onrender.com
+- **Backend API:** https://careermatch-backend-fwgh.onrender.com
+- **ML Service:** https://careermatch-ml.onrender.com
+  
 ## Features
 
 - JWT-protected profile creation and editing: personal/contact details, education, skills, preferences, and a PDF CV.
