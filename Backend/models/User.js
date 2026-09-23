@@ -58,6 +58,18 @@ const candidateSchema = new mongoose.Schema({
     path: { type: String},
     mimetype: { type: String},
     size: { type: Number}
+  },
+  cvAnalysis: {
+    status: { type: String, enum: ["success", "empty", "failed", "unknown"], default: "unknown" },
+    skills: [{ type: String }],
+    education: [{ type: String }],
+    experience: [{ type: String }],
+    projects: [{ type: String }],
+    certifications: [{ type: String }],
+    textLength: { type: Number, default: 0 },
+    modelVersion: { type: String },
+    extractedAt: { type: Date },
+    error: { type: String },
   }
 });
 
@@ -88,6 +100,7 @@ const userSchema = new mongoose.Schema(
       },
       algorithmVersion: String,
       scoreWeightsVersion: String,
+      batchId: String,
     }],
   },
   { timestamps: true }

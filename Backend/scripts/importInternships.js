@@ -1,10 +1,14 @@
 import mongoose from "mongoose";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import csv from "csv-parser"; // install this
 import dotenv from "dotenv";
 import Internship from "../models/Internship.js";
 
 dotenv.config();
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const DATASET_PATH = path.resolve(SCRIPT_DIR, "..", "dataset_intern.csv");
 
 const parseDate = (dateStr) => {
   if (!dateStr) return null;
@@ -41,7 +45,7 @@ const importData = async () => {
 
     const results = [];
 
-    fs.createReadStream("dataset_intern.csv") // path to your file
+    fs.createReadStream(DATASET_PATH)
       .pipe(csv())
       .on("data", (row) => {
         const deadline = parseDate(row.Application_Deadline);
@@ -99,8 +103,14 @@ const importData = async () => {
           mongoose.connection.close();
         } catch (err) {
           console.error("❌ Error inserting data:", err);
-          mongoose.connection.close();
+          await mongoose.connection.close();
+          process.exit(1);
         }
+      })
+      .on("error", async (err) => {
+        console.error("❌ Error reading CSV:", err);
+        await mongoose.connection.close();
+        process.exit(1);
       });
   } catch (error) {
     console.error("❌ Error connecting DB:", error);

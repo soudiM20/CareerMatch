@@ -26,15 +26,7 @@ const Homepage = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Fix (fake-functionality audit): the hero search bar and "View All
-  // Internships" button previously had no handler at all — typing a query
-  // and pressing "Search" did nothing. There is no separate public search-
-  // results page in this frontend (GET /internships/search is a backend
-  // endpoint with no consuming UI), and building one is a larger feature
-  // than a "final audit" pass should add. The honest, minimal fix routes
-  // both to the real internship-discovery flow this app already has
-  // (recommendations), rather than leaving a control that visibly does
-  // nothing.
+  // The homepage routes searches into the existing recommendation-role filter.
   const goToInternships = () => {
     const query = searchQuery.trim();
     navigate(query ? `/recomm-check?role=${encodeURIComponent(query)}` : "/recomm-check");
@@ -210,8 +202,8 @@ const Homepage = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Search by role, company, or skills..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Filter recommendations by role..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') goToInternships(); }}
@@ -222,7 +214,8 @@ const Homepage = () => {
                     padding: '12px 16px 12px 40px',
                     border: '1px solid #d1d5db',
                     borderRadius: '8px',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    color: '#1f2937'
                   }}
                 />
               </div>
@@ -444,7 +437,7 @@ const Homepage = () => {
                 transition: 'all 0.3s ease'
               }}
             >
-              View All Internships
+              Browse internship recommendations
             </button>
           </div>
         </div>
@@ -479,38 +472,31 @@ const Homepage = () => {
             
             <div>
               <h3 className="font-semibold mb-4" style={{ fontWeight: '600', marginBottom: '16px' }}>Quick Links</h3>
-              {/* Fix (fake-functionality audit): all six footer links were
-                  `href="#"` with no destination behind them — the same
-                  issue Section 43 asked me to check. "Browse Internships"
-                  now goes to the app's real internship-discovery flow.
-                  The rest (Career Guidance, Success Stories) don't have a
-                  page behind them anywhere in this codebase, so — same
-                  treatment as the "Forgot Password?" fix in AuthPage.jsx —
-                  they're plain non-link text instead of a link that looks
-                  functional but silently does nothing. */}
+                {/* Footer actions lead to the app's real discovery and information pages. */}
               <ul className="space-y-2 text-gray-300" style={{ listStyle: 'none', padding: '0', color: '#d1d5db' }}>
                 <li style={{ marginBottom: '8px' }}>
                   <button onClick={goToInternships} className="hover:text-white transition-colors" style={{ textDecoration: 'none', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>
                     Browse Internships
                   </button>
                 </li>
-                <li style={{ marginBottom: '8px', color: '#9ca3af' }}>Career Guidance (coming soon)</li>
-                <li style={{ marginBottom: '8px', color: '#9ca3af' }}>Success Stories (coming soon)</li>
+                <li style={{ marginBottom: '8px' }}><button onClick={() => navigate('/info/guidance')} className="hover:text-white transition-colors" style={{ textDecoration: 'none', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>Career Guidance</button></li>
+                <li style={{ marginBottom: '8px' }}><button onClick={() => navigate('/info/stories')} className="hover:text-white transition-colors" style={{ textDecoration: 'none', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>Success Stories</button></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4" style={{ fontWeight: '600', marginBottom: '16px' }}>Support</h3>
               <ul className="space-y-2 text-gray-300" style={{ listStyle: 'none', padding: '0', color: '#d1d5db' }}>
-                <li style={{ marginBottom: '8px', color: '#9ca3af' }}>Help Center (coming soon)</li>
-                <li style={{ marginBottom: '8px', color: '#9ca3af' }}>Contact Us (coming soon)</li>
-                <li style={{ marginBottom: '8px', color: '#9ca3af' }}>Terms of Service (coming soon)</li>
+                <li style={{ marginBottom: '8px' }}><button onClick={() => navigate('/info/help')} className="hover:text-white transition-colors" style={{ textDecoration: 'none', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>Help Center</button></li>
+                <li style={{ marginBottom: '8px' }}><button onClick={() => navigate('/info/contact')} className="hover:text-white transition-colors" style={{ textDecoration: 'none', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>Contact Us</button></li>
+                <li style={{ marginBottom: '8px' }}><button onClick={() => navigate('/info/terms')} className="hover:text-white transition-colors" style={{ textDecoration: 'none', color: 'inherit', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>Terms of Service</button></li>
               </ul>
             </div>
             
             <div>
               <h3 className="font-semibold mb-4" style={{ fontWeight: '600', marginBottom: '16px' }}>Connect</h3>
-              <p className="text-gray-300 mb-2" style={{ color: '#d1d5db', marginBottom: '8px' }}>Support contact is not available in this demo.</p>
+              <p className="text-gray-300 mb-2" style={{ color: '#d1d5db', marginBottom: '8px' }}>Questions about matching, filters, or your profile?</p>
+              <button onClick={() => navigate('/info/contact')} className="text-blue-300 hover:text-white transition-colors" style={{ color: '#93c5fd', background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}>See contact guidance</button>
             </div>
           </div>
           

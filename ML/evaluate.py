@@ -12,9 +12,7 @@
 import math
 import json
 
-from app import (df, vectorizer, tfidf_matrix, apply_filters, explain_skills,
-                 candidate_text, parse_skills, matches_location, normalize_mode,
-                 duration_matches)
+from app import apply_filters, canonical_skill, parse_skills, score_recommendation_rows, df
 
 # ---------------------------------------------------------------------------
 # Step 1: labeled evaluation data
@@ -87,7 +85,7 @@ def build_labels(candidate):
     the currently-active dataset (an already-expired internship can never be
     recommended, so it would be an unfair/impossible label to include)."""
     active = apply_filters(df, candidate, {})
-    candidate_skill_set = {s.strip().lower() for s in candidate["skills"]}
+    candidate_skill_set = {canonical_skill(s) for s in candidate["skills"]}
     relevant = []
     for _, row in active.iterrows():
         required = {s.strip().lower() for s in parse_skills(row.get("Required_Skills", ""))}
@@ -99,30 +97,14 @@ def build_labels(candidate):
 
 
 def score_candidate(candidate, active, skill_weight, relevance_weight, preference_weight_pct):
-    """Re-implements app.py's recommend_candidate scoring with configurable
-    weights, returning internship IDs ranked highest score first."""
-    similarities = vectorizer.transform([candidate_text(candidate)])
-    sims = (tfidf_matrix[active.index] @ similarities.T).toarray().flatten()
-    # cosine_similarity(A, B) on TF-IDF (L2-normalized) vectors reduces to a
-    # plain dot product, avoiding importing sklearn's cosine_similarity twice
-    preferences = candidate.get("preferences", {})
-    scored = []
-    for position, (_, row) in enumerate(active.iterrows()):
-        required = parse_skills(row.get("Required_Skills", ""))
-        _, _, _, coverage = explain_skills(candidate["skills"], required)
-        relevance = round(float(sims[position]) * 100)
-        # Match app.py's production preference semantics exactly. The
-        # configurable percentage simply scales the same 10-point maximum.
-        raw_preference_fit = (
-            (3 if preferences.get("mode") and normalize_mode(row.get("Mode", "")) == normalize_mode(preferences["mode"]) else 0) +
-            (3 if preferences.get("locationPref") and matches_location(row, preferences["locationPref"]) else 0) +
-            (4 if duration_matches(row.get("Duration_Months"), preferences.get("duration")) else 0)
-        )
-        preference_component = (preference_weight_pct / 10) * raw_preference_fit
-        score = skill_weight * coverage + relevance_weight * relevance + preference_component
-        scored.append((str(row["Internship_ID"]), score))
-    scored.sort(key=lambda pair: pair[1], reverse=True)
-    return [internship_id for internship_id, _ in scored]
+    """Use app.py's production scoring and ordering directly."""
+    results = score_recommendation_rows(
+        active, candidate, skill_weight=skill_weight,
+        relevance_weight=relevance_weight,
+        preference_scale=preference_weight_pct / 10,
+        top_k=len(active),
+    )
+    return [result["internship_id"] for result in results]
 
 
 def precision_at_k(ranked, relevant, k):

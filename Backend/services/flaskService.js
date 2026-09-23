@@ -9,7 +9,10 @@ export const getRecommendationsFromFlask = async (profileData, filters = {}) => 
   filters,
   top_k: 20
 }, {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-ML-Service-Token": process.env.FLASK_SERVICE_TOKEN,
+      },
       timeout: 10000, // 10s timeout
     });
     return res.data;

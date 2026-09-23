@@ -3,6 +3,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { analyzeCvFile } from "../services/cvAnalysisService.js";
 
 // Storage note (Task 13 audit): CVs are stored on this server's local disk
 // (`uploads/cv/`), keyed by a generated UUID filename with only the
@@ -36,15 +37,22 @@ const storage = multer.memoryStorage();
 
 const PDF_MAGIC_BYTES = Buffer.from("%PDF-");
 const isNonEmptyString = (value) => typeof value === "string" && value.trim().length > 0;
-const isValidDate = (value) => isNonEmptyString(value) && !Number.isNaN(new Date(value).valueOf());
+export const isValidCalendarDate = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+};
+const isValidDate = (value) => isNonEmptyString(value) && isValidCalendarDate(value);
 const hasNonEmptyStrings = (values) => Array.isArray(values) && values.length > 0 && values.every(isNonEmptyString);
-const hasValidEducation = (entries) => Array.isArray(entries) && entries.length > 0 && entries.every((entry) => {
+export const hasValidEducation = (entries) => Array.isArray(entries) && entries.length > 0 && entries.every((entry) => {
   if (!entry || typeof entry !== "object") return false;
   const fields = ["degree", "institution", "fieldOfStudy", "startDate", "endDate", "grade"];
   if (!fields.every((field) => isNonEmptyString(entry[field]))) return false;
-  const start = new Date(entry.startDate);
-  const end = new Date(entry.endDate);
-  return !Number.isNaN(start.valueOf()) && !Number.isNaN(end.valueOf()) && start <= end;
+  if (!isValidCalendarDate(entry.startDate) || !isValidCalendarDate(entry.endDate)) return false;
+  const start = new Date(`${entry.startDate}T00:00:00`);
+  const end = new Date(`${entry.endDate}T00:00:00`);
+  return start <= end;
 });
 const hasValidLanguages = (languages) => Array.isArray(languages) && languages.length > 0 && languages.every((language) =>
   language && typeof language === "object" && isNonEmptyString(language.name) && isNonEmptyString(language.proficiency)
@@ -227,6 +235,10 @@ export const updateOtherDetails = async (req, res) => {
     // re-upload leaves the previous file behind forever.
     const previousCvPath = user.candidateProfile?.cv?.path;
 
+    const cvAnalysis = req.file
+      ? await analyzeCvFile(req.file.path)
+      : user.candidateProfile?.cvAnalysis || { status: "unknown", skills: [], education: [], experience: [], projects: [], certifications: [] };
+
     user.candidateProfile = {
       ...user.candidateProfile?.toObject(),
       education,
@@ -242,6 +254,7 @@ export const updateOtherDetails = async (req, res) => {
         mimetype: req.file.mimetype,
         size: req.file.size,
       } : user.candidateProfile.cv,
+      cvAnalysis,
     };
 
     try {

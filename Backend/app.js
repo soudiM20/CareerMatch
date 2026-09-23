@@ -12,6 +12,9 @@ dotenv.config();
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "replace-with-a-long-random-secret") {
   throw new Error("JWT_SECRET must be set to a strong, non-placeholder value");
 }
+if (!process.env.FLASK_SERVICE_TOKEN || process.env.FLASK_SERVICE_TOKEN === "replace-with-a-long-random-service-token") {
+  throw new Error("FLASK_SERVICE_TOKEN must be set to a strong, non-placeholder value");
+}
 connectDB();
 
 const app = express();

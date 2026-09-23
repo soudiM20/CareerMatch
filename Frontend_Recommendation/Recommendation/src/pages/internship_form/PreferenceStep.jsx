@@ -35,7 +35,7 @@ const sectors = [
     { value: 'hybrid', label: 'Hybrid', icon: '🔄', description: 'Mix of remote and office' }
   ];
 
-  const durations = ['3 months', '6 months', '9 months', '12 months', 'Flexible'];
+  const durations = ['3 months', '6 months', '12 months', 'Flexible'];
 
   const toggleSector = (sector) => {
     const updated = sectorOfInterest.includes(sector)

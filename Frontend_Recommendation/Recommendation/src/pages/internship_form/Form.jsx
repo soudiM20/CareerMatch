@@ -5,7 +5,7 @@ import SkillsLanguagesStep from './SkillsLanguagesStep';
 import PreferenceStep from './PreferenceStep';
 import CVUploadStep from './CVUploadStep';
 import ProgressBar from './ProgressBar';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import API from "../../config/api";
 import { clearCurrentUserDraft, draftKey } from "../../config/draftStorage";
@@ -38,8 +38,16 @@ const steps = [
   { title: 'CV Upload', icon: '📄' }
 ];
 
+const isValidCalendarDate = (value) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+};
+
 function Form() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState(initialFormData);
   const [completedSteps, setCompletedSteps] = useState(new Array(steps.length).fill(false));
@@ -159,8 +167,9 @@ function Form() {
           edu.degree &&
           edu.institution &&
           edu.fieldOfStudy &&
-          edu.startDate &&
-          edu.endDate &&
+          isValidCalendarDate(edu.startDate) &&
+          isValidCalendarDate(edu.endDate) &&
+          edu.startDate <= edu.endDate &&
           edu.grade
       );
 
@@ -252,7 +261,8 @@ const handleSubmit = async () => {
     clearCurrentUserDraft();
 
     addBadge('form-completed');
-    navigate("/recommendations");
+    const role = searchParams.get("role");
+    navigate(role ? `/recommendations?role=${encodeURIComponent(role)}` : "/recommendations");
 
   } catch (error) {
     console.error('Submission failed:', error.response?.data || error.message);

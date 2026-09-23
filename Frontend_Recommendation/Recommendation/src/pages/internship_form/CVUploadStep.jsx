@@ -85,6 +85,7 @@ const CVUploadStep = ({ cv, cvName, onUpdate, onBadgeEarned }) => {
         >
           <Upload className="mx-auto text-gray-400 mb-4" size={48} />
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg text-lg font-medium hover:bg-blue-600"
           >
@@ -92,9 +93,9 @@ const CVUploadStep = ({ cv, cvName, onUpdate, onBadgeEarned }) => {
           </button>
           <p className="mt-3 text-sm text-gray-500">or drag & drop your file here</p>
           {cvName && (
-            <p className="mt-3 text-xs text-amber-700">
-              You previously selected "{cvName}", but files can't be restored after a page
-              refresh — please re-select it.
+            <p className="mt-3 text-sm text-green-700">
+              Current uploaded CV: <span className="font-semibold">{cvName}</span>.
+              Select a new PDF above to replace it.
             </p>
           )}
           <input
@@ -113,6 +114,7 @@ const CVUploadStep = ({ cv, cvName, onUpdate, onBadgeEarned }) => {
               <p className="text-sm text-blue-600">Selected ✅ — will be uploaded when you submit</p>
             </div>
             <button
+              type="button"
               onClick={removeFile}
               className="text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full p-1 transition-all"
             >
@@ -125,6 +127,7 @@ const CVUploadStep = ({ cv, cvName, onUpdate, onBadgeEarned }) => {
       {/* Help Section */}
       <div>
         <button
+          type="button"
           onClick={() => setShowHelp(!showHelp)}
           className="flex items-center gap-2 text-blue-600 font-medium"
         >

@@ -13,20 +13,42 @@ const skillOptions = [
   "Python",
   "Research Skills",
   "Sales Skills",
-  "Writing"
+  "Writing",
+  "C++",
+  "Java",
+  "JavaScript",
+  "HTML/CSS",
+  "React.js",
+  "Node.js",
+  "SQL",
+  "Data Structures",
+  "Machine Learning",
 ];
 
-
-const languageOptions = ["English", "Hindi", "Marathi", "Gujarati", "Tamil", "Punjabi"];
+const languageOptions = [
+  "English",
+  "Bengali",
+  "Hindi",
+  "Marathi",
+  "Gujarati",
+  "Tamil",
+  "Punjabi",
+];
 
 const proficiencyLevels = [
   { value: "beginner", label: "Beginner", color: "bg-red-400" },
   { value: "intermediate", label: "Intermediate", color: "bg-yellow-400" },
   { value: "fluent", label: "Fluent", color: "bg-blue-400" },
-  { value: "native", label: "Native", color: "bg-green-400" }
+  { value: "native", label: "Native", color: "bg-green-400" },
 ];
 
-const SkillsLanguagesStep = ({ skills, languages, onUpdate, onBadgeEarned }) => {
+const SkillsLanguagesStep = ({
+  skills,
+  languages,
+  onUpdate,
+  onBadgeEarned,
+}) => {
+  const [selectedLanguage, setSelectedLanguage] = useState("");
   const [selectedProficiency, setSelectedProficiency] = useState("");
 
   const toggleSkill = (skill) => {
@@ -41,14 +63,30 @@ const SkillsLanguagesStep = ({ skills, languages, onUpdate, onBadgeEarned }) => 
     onUpdate({ skills: updatedSkills });
   };
 
-  const addLanguage = (lang) => {
-    if (!selectedProficiency) return alert("Select proficiency first!");
-    const exists = languages.some((l) => l.name === lang);
-    if (!exists) {
-      const updatedLanguages = [...languages, { name: lang, proficiency: selectedProficiency }];
-      onUpdate({ languages: updatedLanguages });
-      if (updatedLanguages.length === 1) onBadgeEarned("first-language-added");
-      if (updatedLanguages.length >= 3) onBadgeEarned("polyglot");
+  const selectLanguage = (lang) => {
+    setSelectedLanguage(lang);
+    const existingLanguage = languages.find((language) => language.name === lang);
+    setSelectedProficiency(existingLanguage?.proficiency || "");
+  };
+
+  const addLanguage = () => {
+    if (!selectedLanguage || !selectedProficiency) return;
+
+    const existingIndex = languages.findIndex(
+      (language) => language.name === selectedLanguage,
+    );
+    const updatedLanguages = [...languages];
+    const entry = { name: selectedLanguage, proficiency: selectedProficiency };
+
+    if (existingIndex >= 0) updatedLanguages[existingIndex] = entry;
+    else updatedLanguages.push(entry);
+
+    onUpdate({ languages: updatedLanguages });
+    if (existingIndex < 0 && updatedLanguages.length === 1) {
+      onBadgeEarned("first-language-added");
+    }
+    if (existingIndex < 0 && updatedLanguages.length >= 3) {
+      onBadgeEarned("polyglot");
     }
   };
 
@@ -82,14 +120,18 @@ const SkillsLanguagesStep = ({ skills, languages, onUpdate, onBadgeEarned }) => 
               }`}
             >
               {skill}
-              {skills.includes(skill) && <Star size={14} className="text-yellow-400" />}
+              {skills.includes(skill) && (
+                <Star size={14} className="text-yellow-400" />
+              )}
             </button>
           ))}
         </div>
 
         {skills.length > 0 && (
           <div className="mt-4">
-            <p className="text-lg font-medium text-gray-700 mb-2">Added Skills:</p>
+            <p className="text-lg font-medium text-gray-700 mb-2">
+              Added Skills:
+            </p>
             <div className="flex flex-wrap gap-2">
               {skills.map((skill) => (
                 <div
@@ -114,13 +156,20 @@ const SkillsLanguagesStep = ({ skills, languages, onUpdate, onBadgeEarned }) => 
         </h3>
 
         <div className="mb-4">
-          <p className="text-lg text-gray-600 mb-2">Select language and proficiency:</p>
+          <p className="text-lg text-gray-600 mb-2">
+            Select language and proficiency:
+          </p>
           <div className="flex flex-wrap gap-2 mb-2">
             {languageOptions.map((lang) => (
               <button
                 key={lang}
-                onClick={() => addLanguage(lang)}
-                className="px-4 py-2 rounded-xl border bg-white text-blue-700 border-blue-300 hover:bg-blue-50 transition-all"
+                type="button"
+                onClick={() => selectLanguage(lang)}
+                className={`px-4 py-2 rounded-xl border transition-all ${
+                  selectedLanguage === lang
+                    ? "bg-blue-600 text-white border-blue-700 shadow-sm"
+                    : "bg-white text-blue-700 border-blue-300 hover:bg-blue-50"
+                }`}
               >
                 {lang}
               </button>
@@ -131,6 +180,7 @@ const SkillsLanguagesStep = ({ skills, languages, onUpdate, onBadgeEarned }) => 
             {proficiencyLevels.map((level) => (
               <button
                 key={level.value}
+                type="button"
                 onClick={() => setSelectedProficiency(level.value)}
                 className={`px-4 py-2 rounded-xl border transition-all flex-1 text-center ${
                   selectedProficiency === level.value
@@ -142,28 +192,47 @@ const SkillsLanguagesStep = ({ skills, languages, onUpdate, onBadgeEarned }) => 
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={addLanguage}
+            disabled={!selectedLanguage || !selectedProficiency}
+            className="mt-3 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {languages.some((language) => language.name === selectedLanguage)
+              ? "Update Language"
+              : "Add Language"}
+          </button>
         </div>
 
         {/* Added Languages */}
         {languages.length > 0 && (
           <div className="mt-4">
-            <p className="text-lg font-medium text-gray-700 mb-2">Added Languages:</p>
+            <p className="text-lg font-medium text-gray-700 mb-2">
+              Added Languages:
+            </p>
             <div className="space-y-2">
               {languages.map((lang, i) => {
-                const profLevel = proficiencyLevels.find((p) => p.value === lang.proficiency);
+                const profLevel = proficiencyLevels.find(
+                  (p) => p.value === lang.proficiency,
+                );
                 return (
                   <div
                     key={i}
                     className="bg-white border border-green-200 rounded-xl p-3 flex justify-between items-center"
                   >
                     <div className="flex items-center gap-4">
-                      <span className="font-medium text-green-800">{lang.name}</span>
+                      <span className="font-medium text-green-800">
+                        {lang.name}
+                      </span>
                       <span className="text-sm text-gray-600 px-2 py-1 rounded-full border border-gray-300">
                         {profLevel?.label}
                       </span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => removeLanguage(i)}
+                      aria-label={`Remove ${lang.name}`}
+                      title={`Remove ${lang.name}`}
                       className="text-red-500 hover:text-red-700"
                     >
                       <X size={16} />

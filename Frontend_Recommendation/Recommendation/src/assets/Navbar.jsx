@@ -1,31 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { UserCircle } from "lucide-react";
 import { clearCurrentUserDraft } from "../config/draftStorage";
 
 const Navbar = () => {
-  const { t, i18n } = useTranslation(); // hook for translations
-  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const { t } = useTranslation();
   const navigate = useNavigate();
-
-  const languages = [
-    { code: "en", name: "English", flag: "🇮🇳" },
-    { code: "hi", name: "हिंदी", flag: "🇮🇳" },
-    { code: "ta", name: "தமிழ்", flag: "🇮🇳" },
-    { code: "bn", name: "বাংলা", flag: "🇮🇳" },
-    { code: "mr", name: "मराठी", flag: "🇮🇳" },
-    { code: "gu", name: "ગુજરાતી", flag: "🇮🇳" },
-    { code: "kn", name: "ಕನ್ನಡ", flag: "🇮🇳" },
-    { code: "ml", name: "മലയാളം", flag: "🇮🇳" },
-    { code: "pa", name: "ਪੰਜਾਬੀ", flag: "🇮🇳" },
-  ];
-
-  const handleLanguageSelect = (language) => {
-    setSelectedLanguage(language.name);
-    i18n.changeLanguage(language.code); // changes site language
-    setIsLanguageOpen(false);
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg shadow-md border-b">
@@ -82,65 +63,19 @@ const Navbar = () => {
           >
             {t("Get Recommendations")}
           </NavLink>
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              `px-4 py-2 rounded-xl font-semibold transition ${
-                isActive
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-blue-600 hover:bg-white"
-              }`
-            }
-          >
-            Dashboard
-          </NavLink>
         </nav>
 
         {/* Right section */}
         <div className="flex items-center gap-4">
-          {/* Language dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
-            >
-              🌐 <span className="hidden sm:inline">{selectedLanguage}</span>
-              <svg
-                className={`w-4 h-4 transition-transform ${
-                  isLanguageOpen ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            {isLanguageOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border rounded-xl shadow-lg z-50">
-                {languages.map((language) => (
-                  <button
-                    key={language.code}
-                    onClick={() => handleLanguageSelect(language)}
-                    className={`w-full flex items-center px-4 py-2 text-sm rounded-lg hover:bg-gray-50 ${
-                      selectedLanguage === language.name
-                        ? "bg-blue-50 text-blue-600 font-semibold"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    <span className="mr-2">{language.flag}</span>
-                    {language.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/profile")}
+            aria-label="Open profile"
+            title="Open profile"
+            className="text-gray-600 hover:text-blue-600 transition"
+          >
+            <UserCircle size={34} strokeWidth={1.7} />
+          </button>
 
           {/* Logout */}
           <button onClick={() => { clearCurrentUserDraft(); localStorage.removeItem("token"); navigate("/signin"); }} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition">

@@ -5,6 +5,9 @@ import { literalRegex } from "../utils/searchRegex.js";
 import { startOfToday } from "../utils/dates.js";
 import { validateRecommendationRequest } from "../utils/recommendationValidation.js";
 import { locationQuery } from "../utils/location.js";
+import { publicInternship, publicInternshipSummary } from "../utils/publicInternship.js";
+import { matchesRequiredSkills } from "../utils/skills.js";
+import crypto from "crypto";
 
 // Get all internships
 export const getInternships = async (req, res) => {
@@ -28,9 +31,11 @@ export const getInternships = async (req, res) => {
     const locationFilter = locationQuery(location);
     if (locationFilter) query.$and = locationFilter.$and;
     if (workMode) query.Mode = literalRegex(workMode);
-    if (skills) query.Required_Skills = { $in: skills.split(",").map(skill => literalRegex(skill.trim())) };
-    const internships = await Internship.find(query).sort({ createdAt: -1 }).limit(100).lean();
-    res.json(internships);
+    const internships = await Internship.find(query).sort({ createdAt: -1 }).lean();
+    const matchingInternships = skills
+      ? internships.filter((internship) => matchesRequiredSkills(internship.Required_Skills, skills))
+      : internships;
+    res.json(matchingInternships.slice(0, 100).map(publicInternshipSummary));
   } catch (err) {
     console.error("Error in getInternships:", err);
     res.status(500).json({ message: "Unable to load internships" });
@@ -39,11 +44,11 @@ export const getInternships = async (req, res) => {
 export const getInternshipById = async (req, res) => {
   try {
     const { id } = req.params; // id = Internship_ID from URL
-    const internship = await Internship.findOne({ Internship_ID: id, Application_Deadline: { $gte: startOfToday() } });
+    const internship = await Internship.findOne({ Internship_ID: id, Application_Deadline: { $gte: startOfToday() } }).lean();
     if (!internship) {
       return res.status(404).json({ message: "Internship not found" });
     }
-    res.json(internship);
+    res.json(publicInternship(internship));
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Unable to load internship" });
@@ -83,6 +88,7 @@ export const getRecommendations = async (req, res) => {
         mode: profile.preferences?.mode || null,
         locationPref: profile.preferences?.locationPref || null,
       },
+      cvAnalysis: profile.cvAnalysis || null,
     };
 
     // Send to Flask service. Now a POST endpoint (see routes/internshipRoutes.js),
@@ -134,17 +140,20 @@ export const getRecommendations = async (req, res) => {
       (flaskResponse.recommendations || []).map(item => [item.internship_id, item])
     );
     const response = orderedInternships.map(internship => ({
-      ...internship.toObject(),
+      ...publicInternshipSummary(internship),
       recommendation: explanationById[internship.Internship_ID] || null,
     }));
 
+    const generatedAt = new Date();
+    const batchId = crypto.randomUUID();
     const historyEntries = response.slice(0, 10).map(item => ({
       internshipId: item.Internship_ID,
       internshipTitle: item.Internship_Title,
       companyName: item.Company_Name,
       matchScore: item.recommendation?.match_score,
       missingSkills: item.recommendation?.missing_skills || [],
-      generatedAt: new Date(),
+      generatedAt,
+      batchId,
       filters: {
         role: filters.role || undefined,
         location: filters.location || undefined,
@@ -164,10 +173,10 @@ export const getRecommendations = async (req, res) => {
     // most recent stored batch already covers the exact same set of
     // internship IDs and was generated within the last 5 minutes.
     const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
-    const newIds = historyEntries.map((entry) => entry.internshipId).sort().join(",");
+    const newIds = historyEntries.map((entry) => entry.internshipId).join(",");
     const existingHistory = req.user.recommendationHistory || [];
     const previousBatch = existingHistory.slice(-historyEntries.length);
-    const previousIds = previousBatch.map((entry) => entry.internshipId).sort().join(",");
+    const previousIds = previousBatch.map((entry) => entry.internshipId).join(",");
     const previousGeneratedAt = previousBatch[previousBatch.length - 1]?.generatedAt;
     const filterFingerprint = JSON.stringify(historyEntries[0]?.filters || {});
     const previousFilterFingerprint = JSON.stringify(previousBatch[0]?.filters || {});
@@ -206,7 +215,18 @@ export const getRecommendations = async (req, res) => {
 export const getRecommendationHistory = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("recommendationHistory").lean();
-    res.json(user?.recommendationHistory?.slice().reverse() || []);
+    const entries = user?.recommendationHistory || [];
+    const batches = [];
+    const batchIndexes = new Map();
+    entries.forEach((entry) => {
+      const key = entry.batchId || new Date(entry.generatedAt).getTime();
+      if (!batchIndexes.has(key)) {
+        batchIndexes.set(key, batches.length);
+        batches.push([]);
+      }
+      batches[batchIndexes.get(key)].push(entry);
+    });
+    res.json(batches.reverse().flat());
   } catch (err) {
     res.status(500).json({ message: "Unable to load recommendation history" });
   }
@@ -244,9 +264,9 @@ export const searchInternships = async (req, res) => {
         { Eligibility_Description: regex },
         { Hiring_Workflow: regex },
       ]
-    }).limit(50);
+    }).limit(50).lean();
 
-    res.json(internships);
+    res.json(internships.map(publicInternshipSummary));
   } catch (err) {
     console.error("Error in searchInternships:", err);
     res.status(500).json({ message: "Unable to search internships" });

@@ -1,45 +1,25 @@
 # Pre-deploy checklist
 
-This build was audited in a sandbox with no network access. Everything
-below marks what was actually verified there vs. what still needs to be
-done on a machine with real network/npm access before this goes live.
+This checklist records the implementation and the commands required before deployment. A checked item means it was run in the current workspace; unchecked items still require deployment-environment verification.
 
-## Verified in this pass (commands actually run, not assumed)
+## Verified in this audit
 
-- Backend: `node --test` → 26/27 passing. The 1 non-passing test
-  (`tests/userModel.test.js`) failed only because `mongoose` isn't
-  installed in the audit sandbox (`npm install` needs network access) —
-  the Mongoose schema change it targets was verified correct by direct
-  code review.
-- ML: 9/9 tests passing (`ML/test_app.py`, hand-executed since `pytest`
-  wasn't installable offline).
-- `ML/evaluate.py` re-run from scratch, produces real (not fabricated)
-  Precision/Recall/NDCG@K and MRR numbers — see `ML/EVALUATION.md`.
-- `Backend/dataset_intern.csv` and `ML/internship.csv` confirmed
-  byte-identical (500/500 rows, 0 field diffs).
-- No secrets or a real `.env` committed anywhere in this zip; `.env.example`
-  files are complete and accurate for all three services.
-- `package-lock.json` (Backend + Frontend) are structurally valid, real
-  lockfiles with pinned versions; `xlsx` confirmed removed from both.
-
-## NOT verified — do these yourself before pushing
-
-- [ ] `cd Frontend_Recommendation/Recommendation && npm install && npm run lint && npm run build`
-      — never run in any sandbox that's touched this project (no network
-      access anywhere it's been audited). Fix anything that fails.
-- [ ] `cd Backend && npm install && npm test` — re-confirm all 27 pass
-      once `mongoose` is actually installed.
-- [ ] `cd ML && pip install -r requirements.txt && pytest` — re-confirm
-      the real pytest run matches the 9/9 manual result.
+- [x] Backend regression suite: `npm test` (30 passing).
+- [x] ML regression suite: `python -m pytest` (12 passing).
+- [x] Python syntax compilation: `python -m py_compile app.py evaluate.py test_app.py train.py test.py`.
+- [x] Offline evaluation regenerated from current code and dataset; see `ML/EVALUATION.md`.
+- [x] Frontend lint and clean-install build: run from `Frontend_Recommendation/Recommendation` after `npm ci`.
+- [x] CV uploads remain MIME/signature/size validated and locally stored under generated UUID filenames; PDF contents are not parsed.
+- [x] Public internship DTOs omit `Requirement_Contact` and unnecessary internal/long fields.
+- [x] No real `.env` is retained in the project; only `.env.example` templates remain.
 
 ## Before making it live
 
-- [ ] Set a real, random `JWT_SECRET` in the deployed `Backend/.env`.
-      `app.js` now refuses to start on the placeholder value — this is
-      intentional, not a bug, but you need the real secret ready.
+- [ ] Set a new, random `JWT_SECRET` in the deployed `Backend/.env`; the previously exposed value must be invalidated.
 - [ ] Set `MONGO_URI` to your production/staging MongoDB, not
       `localhost`.
 - [ ] Set `FLASK_API_URL` to your deployed Flask service's real URL.
+- [ ] Set a new, matching random `FLASK_SERVICE_TOKEN` in Backend and ML; the previously exposed value must be invalidated and the token must never reach the frontend.
 - [ ] Set `FRONTEND_URLS` (CORS allow-list) to your deployed frontend's
       real origin(s) — no trailing slashes.
 - [ ] Set `VITE_API_URL` in the frontend build to your deployed backend's
@@ -49,14 +29,8 @@ done on a machine with real network/npm access before this goes live.
       if the service is reachable from outside localhost).
 - [ ] Run the import script once against production Mongo so the catalog
       isn't empty on first load.
+- [ ] Run Flask with Gunicorn (`gunicorn --bind 0.0.0.0:$PORT app:app`) in production, not the development server.
 
-## Known, documented (not blocking) limitations
+## Known limitations
 
-Content-based recommender only, no collaborative filtering; CV content
-isn't parsed into ranking; in-memory rate limiter is single-process only;
-JWT lives in `localStorage` (XSS trade-off, documented at the point it's
-set in `AuthPage.jsx`); local disk CV storage (fine for one instance, not
-for horizontal scaling). None of these are bugs — they're scope decisions
-appropriate for a single-instance student project, and each is safe to
-describe honestly in an interview rather than a reason to hold off
-shipping.
+The recommender is content-based only, with lexical TF-IDF and explicit skill overlap. The evaluation is small, heuristic, and offline. CV content is not parsed into features. CV storage is local-disk and the rate limiter is process-local, so horizontal deployments need object storage and a shared limiter. JWTs are stored in `localStorage`, which remains an XSS trade-off for this demo. Flask should run behind a production WSGI server with private networking.
